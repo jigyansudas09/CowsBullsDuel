@@ -1,167 +1,421 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>Bulls & Cows AI Challenge</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bulls & Cows Duel</title>
     <style>
-        body { font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; }
-        .game-container { background: #f5f5f5; padding: 20px; border-radius: 10px; }
-        .input-group { margin: 10px 0; }
-        button { background: #4CAF50; color: white; padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer; }
-        #ai-guess { font-size: 1.2em; font-weight: bold; color: #2c3e50; }
+        :root {
+            --primary-color: #2ecc71;
+            --secondary-color: #3498db;
+            --danger-color: #e74c3c;
+            --background-color: #f8f9fa;
+        }
+
+        body {
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem;
+            background: var(--background-color);
+            line-height: 1.6;
+        }
+
+        .game-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2rem;
+            background: white;
+            padding: 2rem;
+            border-radius: 1rem;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .player-area {
+            padding: 1.5rem;
+            border: 2px solid #e0e0e0;
+            border-radius: 0.8rem;
+            background: white;
+        }
+
+        .input-group {
+            margin: 1rem 0;
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        input[type="number"] {
+            padding: 0.8rem;
+            border: 2px solid #ddd;
+            border-radius: 0.5rem;
+            width: 100%;
+            font-size: 1rem;
+        }
+
+        button {
+            background: var(--primary-color);
+            color: white;
+            padding: 0.8rem 1.5rem;
+            border: none;
+            border-radius: 0.5rem;
+            cursor: pointer;
+            font-weight: 600;
+            transition: transform 0.1s, background 0.2s;
+        }
+
+        button:hover {
+            background: #27ae60;
+            transform: translateY(-1px);
+        }
+
+        button:active {
+            transform: translateY(0);
+        }
+
+        .guess-display {
+            margin: 1rem 0;
+            padding: 1rem;
+            background: var(--background-color);
+            border-radius: 0.5rem;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .guess-item {
+            padding: 0.5rem;
+            margin: 0.3rem 0;
+            background: white;
+            border-radius: 0.3rem;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+        }
+
+        .status-message {
+            padding: 1rem;
+            border-radius: 0.5rem;
+            margin: 1rem 0;
+            text-align: center;
+            font-weight: 600;
+        }
+
+        #ai-secret {
+            color: var(--danger-color);
+            font-weight: 700;
+            text-align: center;
+            margin: 1rem 0;
+        }
+
+        #result {
+            font-size: 1.2rem;
+            text-align: center;
+            padding: 1rem;
+        }
+
+        @media (max-width: 768px) {
+            .game-container {
+                grid-template-columns: 1fr;
+                padding: 1rem;
+            }
+            
+            body {
+                padding: 1rem;
+            }
+        }
     </style>
 </head>
 <body>
     <div class="game-container">
-        <h1>Bulls & Cows AI Challenge</h1>
-        
-        <div class="input-group">
-            <label>Your Secret Number: </label>
-            <input type="number" id="secret-number" min="1000" max="9999" 
-                   pattern="[1-9]{4}" title="4 unique digits (1-9)">
-            <button onclick="startGame()">Start Game</button>
+        <!-- Human Player Section -->
+        <div class="player-area">
+            <h2>Player Controls</h2>
+            <div class="input-group">
+                <label>Your Secret Number:</label>
+                <input type="number" id="secret-number" 
+                       min="1000" max="9999" 
+                       placeholder="Enter 4 unique digits (1-9)">
+                <button onclick="startDuel()">Start New Game</button>
+            </div>
+
+            <div class="input-group">
+                <label>Your Guess:</label>
+                <input type="number" id="human-guess">
+                <button onclick="submitHumanGuess()">Submit Guess</button>
+            </div>
+
+            <div class="status-message" id="human-status"></div>
+            <div id="human-guesses" class="guess-display"></div>
         </div>
 
-        <div id="game-interface" style="display: none;">
-            <div id="ai-guess"></div>
+        <!-- AI Opponent Section -->
+        <div class="player-area">
+            <h2>AI Opponent</h2>
+            <div class="status-message" id="ai-status">Waiting for game start...</div>
+            <div id="ai-guess-display" class="guess-display"></div>
+            <div id="ai-secret" style="display: none;"></div>
             
             <div class="input-group">
-                <label>Cows (correct positions): </label>
-                <input type="number" id="cows" min="0" max="4" style="width: 60px;">
+                <label>Cows (correct positions):</label>
+                <input type="number" id="cows" min="0" max="4">
             </div>
             
             <div class="input-group">
-                <label>Bulls (wrong positions): </label>
-                <input type="number" id="bulls" min="0" max="4" style="width: 60px;">
+                <label>Bulls (wrong positions):</label>
+                <input type="number" id="bulls" min="0" max="4">
             </div>
             
             <button onclick="submitFeedback()">Submit Feedback</button>
-            <div id="result"></div>
+            <div id="result" class="status-message"></div>
         </div>
     </div>
 
     <script>
-        class OptimalSolver {
+        class GameSolver {
             constructor() {
-                this.possible = this.generatePossibleNumbers();
-                this.guessHistory = [];
+                this.possibleNumbers = this.generatePossibleNumbers();
+                this.secret = this.generateSecret();
+            }
+
+            generateSecret() {
+                const digits = Array.from({length: 9}, (_, i) => i + 1);
+                return this.shuffleArray(digits).slice(0, 4);
             }
 
             generatePossibleNumbers() {
-                const digits = [1,2,3,4,5,6,7,8,9];
-                const result = [];
-                
-                for(let i=0; i<digits.length; i++) {
-                    for(let j=0; j<digits.length; j++) {
-                        if(j === i) continue;
-                        for(let k=0; k<digits.length; k++) {
-                            if(k === i || k === j) continue;
-                            for(let l=0; l<digits.length; l++) {
-                                if(l === i || l === j || l === k) continue;
-                                result.push([digits[i], digits[j], digits[k], digits[l]]);
+                const numbers = [];
+                for (let a = 1; a <= 9; a++) {
+                    for (let b = 1; b <= 9; b++) {
+                        if (b === a) continue;
+                        for (let c = 1; c <= 9; c++) {
+                            if (c === a || c === b) continue;
+                            for (let d = 1; d <= 9; d++) {
+                                if (d !== a && d !== b && d !== c) {
+                                    numbers.push([a, b, c, d]);
+                                }
                             }
                         }
                     }
                 }
-                return result;
+                return numbers;
             }
 
-            getFeedback(guess, target) {
-                let cows = 0, bulls = 0;
-                for(let i=0; i<4; i++) {
-                    if(guess[i] === target[i]) cows++;
-                    else if(target.includes(guess[i])) bulls++;
+            shuffleArray(array) {
+                for (let i = array.length - 1; i > 0; i--) {
+                    const j = Math.floor(Math.random() * (i + 1));
+                    [array[i], array[j]] = [array[j], array[i]];
                 }
-                return {cows, bulls};
+                return array;
             }
 
-            updatePossibilities(guess, cows, bulls) {
-                this.possible = this.possible.filter(num => {
-                    const fb = this.getFeedback(guess, num);
-                    return fb.cows === cows && fb.bulls === bulls;
-                });
-            }
-
-            makeGuess() {
-                if(this.guessHistory.length === 0) return [1,2,3,4];
-                if(this.possible.length === 1) return this.possible[0];
+            calculateFeedback(guess, target) {
+                let cows = 0, bulls = 0;
+                const targetCounts = new Map();
                 
-                let minMax = Infinity;
-                let bestGuess = this.possible[0];
-                
-                for(const candidate of this.possible) {
-                    const feedbackCounts = {};
-                    for(const target of this.possible) {
-                        const fb = this.getFeedback(candidate, target);
-                        const key = `${fb.cows},${fb.bulls}`;
-                        feedbackCounts[key] = (feedbackCounts[key] || 0) + 1;
+                // First pass for cows
+                for (let i = 0; i < 4; i++) {
+                    if (guess[i] === target[i]) {
+                        cows++;
+                    } else {
+                        targetCounts.set(target[i], (targetCounts.get(target[i]) || 0) + 1);
                     }
-                    const currentMax = Math.max(...Object.values(feedbackCounts));
+                }
+
+                // Second pass for bulls
+                for (let i = 0; i < 4; i++) {
+                    if (guess[i] !== target[i] && targetCounts.has(guess[i])) {
+                        bulls++;
+                        const count = targetCounts.get(guess[i]);
+                        if (count > 1) {
+                            targetCounts.set(guess[i], count - 1);
+                        } else {
+                            targetCounts.delete(guess[i]);
+                        }
+                    }
+                }
+
+                return { cows, bulls };
+            }
+
+            makeOptimalGuess() {
+                if (this.possibleNumbers.length === 1) return this.possibleNumbers[0];
+                
+                let bestGuess = null;
+                let minMaxRemaining = Infinity;
+
+                for (const candidate of this.possibleNumbers) {
+                    const feedbackGroups = new Map();
                     
-                    if(currentMax < minMax) {
-                        minMax = currentMax;
+                    for (const possibleTarget of this.possibleNumbers) {
+                        const { cows, bulls } = this.calculateFeedback(candidate, possibleTarget);
+                        const key = `${cows},${bulls}`;
+                        feedbackGroups.set(key, (feedbackGroups.get(key) || 0) + 1);
+                    }
+                    
+                    const maxGroup = Math.max(...feedbackGroups.values());
+                    if (maxGroup < minMaxRemaining) {
+                        minMaxRemaining = maxGroup;
                         bestGuess = candidate;
                     }
                 }
+
                 return bestGuess;
             }
+
+            updatePossibilities(guess, cows, bulls) {
+                this.possibleNumbers = this.possibleNumbers.filter(num => {
+                    const feedback = this.calculateFeedback(guess, num);
+                    return feedback.cows === cows && feedback.bulls === bulls;
+                });
+            }
         }
 
-        let solver;
-        let targetNumber;
-        let attempts = 0;
+        // Game State Management
+        let gameSolver;
+        let humanSecret;
+        let aiSecret;
+        let humanAttempts = 0;
+        let aiAttempts = 0;
+        let isGameActive = false;
 
-        function startGame() {
+        function startDuel() {
             const secretInput = document.getElementById('secret-number').value;
-            if (!/^(?!.*(.).*\1)[1-9]{4}$/.test(secretInput)) {
-                alert('Invalid number! Must be 4 unique digits (1-9)');
+            
+            // Validate input
+            if (!/^(?!.*(\d).*\1)[1-9]{4}$/.test(secretInput)) {
+                alert('Please enter a valid 4-digit number with unique digits (1-9)');
                 return;
             }
-            
-            targetNumber = secretInput.split('').map(Number);
-            solver = new OptimalSolver();
-            attempts = 0;
-            
-            document.getElementById('game-interface').style.display = 'block';
-            makeAIGuess();
+
+            // Initialize game state
+            humanSecret = secretInput.split('').map(Number);
+            gameSolver = new GameSolver();
+            aiSecret = gameSolver.secret;
+            humanAttempts = 0;
+            aiAttempts = 0;
+            isGameActive = true;
+
+            // Reset UI elements
+            document.getElementById('human-guesses').innerHTML = '';
+            document.getElementById('ai-guess-display').innerHTML = '';
+            document.getElementById('result').textContent = '';
+            document.getElementById('ai-secret').style.display = 'none';
+            document.getElementById('human-guess').value = '';
+            document.getElementById('cows').value = '';
+            document.getElementById('bulls').value = '';
+            document.getElementById('human-status').textContent = '';
+            document.getElementById('ai-status').textContent = 'AI is thinking...';
+            document.getElementById('human-guess').disabled = false;
+
+            // Start AI turn
+            setTimeout(processAITurn, 500);
         }
 
-        function makeAIGuess() {
-            const guess = solver.makeGuess();
-            attempts++;
-            document.getElementById('ai-guess').textContent = 
-                `AI's Guess #${attempts}: ${guess.join('')}`;
+        function processAITurn() {
+            if (!isGameActive) return;
+
+            const aiGuess = gameSolver.makeOptimalGuess();
+            aiAttempts++;
+            
+            // Display AI's guess
+            const guessDisplay = document.getElementById('ai-guess-display');
+            const guessElement = document.createElement('div');
+            guessElement.className = 'guess-item';
+            guessElement.textContent = `AI Guess #${aiAttempts}: ${aiGuess.join('')}`;
+            guessDisplay.appendChild(guessElement);
+            guessDisplay.scrollTop = guessDisplay.scrollHeight;
+
+            // Update UI state
+            document.getElementById('ai-status').textContent = 'Your turn to provide feedback';
+            document.getElementById('cows').focus();
         }
 
         function submitFeedback() {
+            if (!isGameActive) return;
+
             const cows = parseInt(document.getElementById('cows').value);
             const bulls = parseInt(document.getElementById('bulls').value);
-            
+
+            // Validate feedback
             if (isNaN(cows) || isNaN(bulls) || cows < 0 || bulls < 0 || 
-                cows + bulls > 4 || cows > 4 || bulls > 4) {
-                alert('Invalid feedback! Values must be 0-4 and sum ≤4');
+                cows > 4 || bulls > 4 || cows + bulls > 4) {
+                alert('Invalid feedback! Please enter values between 0-4 where total ≤4');
                 return;
             }
-            
-            if(cows === 4) {
-                document.getElementById('result').textContent = 
-                    `AI guessed your number in ${attempts} attempts!`;
+
+            // Get last AI guess
+            const lastGuess = document.getElementById('ai-guess-display')
+                .lastElementChild.textContent
+                .split(': ')[1]
+                .split('')
+                .map(Number);
+
+            // Check for win condition
+            if (cows === 4) {
+                endGame('AI');
                 return;
             }
+
+            // Update AI's knowledge
+            gameSolver.updatePossibilities(lastGuess, cows, bulls);
             
-            const lastGuess = document.getElementById('ai-guess').textContent
-                .split(': ')[1].split('').map(Number);
-            
-            solver.updatePossibilities(lastGuess, cows, bulls);
-            
-            if(solver.possible.length === 0) {
-                document.getElementById('result').textContent = 
-                    'Conflict detected! Invalid feedback provided';
+            if (gameSolver.possibleNumbers.length === 0) {
+                alert('Inconsistent feedback detected! Please check your inputs');
+                isGameActive = false;
                 return;
             }
-            
+
+            // Switch to player's turn
+            document.getElementById('ai-status').textContent = 'AI is thinking...';
             document.getElementById('cows').value = '';
             document.getElementById('bulls').value = '';
-            makeAIGuess();
+            document.getElementById('human-status').textContent = 'Your turn to guess!';
+            document.getElementById('human-guess').focus();
+        }
+
+        function submitHumanGuess() {
+            if (!isGameActive) return;
+
+            const guessInput = document.getElementById('human-guess').value;
+            
+            // Validate guess
+            if (!/^(?!.*(\d).*\1)[1-9]{4}$/.test(guessInput)) {
+                alert('Please enter a valid 4-digit number with unique digits (1-9)');
+                return;
+            }
+
+            const guess = guessInput.split('').map(Number);
+            humanAttempts++;
+
+            // Calculate feedback
+            const feedback = gameSolver.calculateFeedback(guess, aiSecret);
+            
+            // Display guess and feedback
+            const guessDisplay = document.getElementById('human-guesses');
+            const guessElement = document.createElement('div');
+            guessElement.className = 'guess-item';
+            guessElement.textContent = `Guess #${humanAttempts}: ${guessInput} (C:${feedback.cows}, B:${feedback.bulls})`;
+            guessDisplay.appendChild(guessElement);
+            guessDisplay.scrollTop = guessDisplay.scrollHeight;
+
+            // Check win condition
+            if (feedback.cows === 4) {
+                endGame('Player');
+                return;
+            }
+
+            // Reset input and switch to AI's turn
+            document.getElementById('human-guess').value = '';
+            document.getElementById('human-status').textContent = '';
+            setTimeout(processAITurn, 500);
+        }
+
+        function endGame(winner) {
+            isGameActive = false;
+            document.getElementById('ai-secret').textContent = `AI's Secret Number: ${aiSecret.join('')}`;
+            document.getElementById('ai-secret').style.display = 'block';
+            document.getElementById('result').innerHTML = `
+                <h3>🏆 ${winner} Wins in ${Math.max(humanAttempts, aiAttempts)} Rounds!</h3>
+            `;
+            document.getElementById('human-guess').disabled = true;
         }
     </script>
 </body>
