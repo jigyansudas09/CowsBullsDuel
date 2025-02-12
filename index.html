@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Bulls & Cows AI Challenge</title>
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; }
+        .game-container { background: #f5f5f5; padding: 20px; border-radius: 10px; }
+        .input-group { margin: 10px 0; }
+        button { background: #4CAF50; color: white; padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer; }
+        #ai-guess { font-size: 1.2em; font-weight: bold; color: #2c3e50; }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <h1>Bulls & Cows AI Challenge</h1>
+        
+        <div class="input-group">
+            <label>Your Secret Number: </label>
+            <input type="number" id="secret-number" min="1000" max="9999" 
+                   pattern="[1-9]{4}" title="4 unique digits (1-9)">
+            <button onclick="startGame()">Start Game</button>
+        </div>
+
+        <div id="game-interface" style="display: none;">
+            <div id="ai-guess"></div>
+            
+            <div class="input-group">
+                <label>Cows (correct positions): </label>
+                <input type="number" id="cows" min="0" max="4" style="width: 60px;">
+            </div>
+            
+            <div class="input-group">
+                <label>Bulls (wrong positions): </label>
+                <input type="number" id="bulls" min="0" max="4" style="width: 60px;">
+            </div>
+            
+            <button onclick="submitFeedback()">Submit Feedback</button>
+            <div id="result"></div>
+        </div>
+    </div>
+
+    <script>
+        class OptimalSolver {
+            constructor() {
+                this.possible = this.generatePossibleNumbers();
+                this.guessHistory = [];
+            }
+
+            generatePossibleNumbers() {
+                const digits = [1,2,3,4,5,6,7,8,9];
+                const result = [];
+                
+                for(let i=0; i<digits.length; i++) {
+                    for(let j=0; j<digits.length; j++) {
+                        if(j === i) continue;
+                        for(let k=0; k<digits.length; k++) {
+                            if(k === i || k === j) continue;
+                            for(let l=0; l<digits.length; l++) {
+                                if(l === i || l === j || l === k) continue;
+                                result.push([digits[i], digits[j], digits[k], digits[l]]);
+                            }
+                        }
+                    }
+                }
+                return result;
+            }
+
+            getFeedback(guess, target) {
+                let cows = 0, bulls = 0;
+                for(let i=0; i<4; i++) {
+                    if(guess[i] === target[i]) cows++;
+                    else if(target.includes(guess[i])) bulls++;
+                }
+                return {cows, bulls};
+            }
+
+            updatePossibilities(guess, cows, bulls) {
+                this.possible = this.possible.filter(num => {
+                    const fb = this.getFeedback(guess, num);
+                    return fb.cows === cows && fb.bulls === bulls;
+                });
+            }
+
+            makeGuess() {
+                if(this.guessHistory.length === 0) return [1,2,3,4];
+                if(this.possible.length === 1) return this.possible[0];
+                
+                let minMax = Infinity;
+                let bestGuess = this.possible[0];
+                
+                for(const candidate of this.possible) {
+                    const feedbackCounts = {};
+                    for(const target of this.possible) {
+                        const fb = this.getFeedback(candidate, target);
+                        const key = `${fb.cows},${fb.bulls}`;
+                        feedbackCounts[key] = (feedbackCounts[key] || 0) + 1;
+                    }
+                    const currentMax = Math.max(...Object.values(feedbackCounts));
+                    
+                    if(currentMax < minMax) {
+                        minMax = currentMax;
+                        bestGuess = candidate;
+                    }
+                }
+                return bestGuess;
+            }
+        }
+
+        let solver;
+        let targetNumber;
+        let attempts = 0;
+
+        function startGame() {
+            const secretInput = document.getElementById('secret-number').value;
+            if (!/^(?!.*(.).*\1)[1-9]{4}$/.test(secretInput)) {
+                alert('Invalid number! Must be 4 unique digits (1-9)');
+                return;
+            }
+            
+            targetNumber = secretInput.split('').map(Number);
+            solver = new OptimalSolver();
+            attempts = 0;
+            
+            document.getElementById('game-interface').style.display = 'block';
+            makeAIGuess();
+        }
+
+        function makeAIGuess() {
+            const guess = solver.makeGuess();
+            attempts++;
+            document.getElementById('ai-guess').textContent = 
+                `AI's Guess #${attempts}: ${guess.join('')}`;
+        }
+
+        function submitFeedback() {
+            const cows = parseInt(document.getElementById('cows').value);
+            const bulls = parseInt(document.getElementById('bulls').value);
+            
+            if (isNaN(cows) || isNaN(bulls) || cows < 0 || bulls < 0 || 
+                cows + bulls > 4 || cows > 4 || bulls > 4) {
+                alert('Invalid feedback! Values must be 0-4 and sum ≤4');
+                return;
+            }
+            
+            if(cows === 4) {
+                document.getElementById('result').textContent = 
+                    `AI guessed your number in ${attempts} attempts!`;
+                return;
+            }
+            
+            const lastGuess = document.getElementById('ai-guess').textContent
+                .split(': ')[1].split('').map(Number);
+            
+            solver.updatePossibilities(lastGuess, cows, bulls);
+            
+            if(solver.possible.length === 0) {
+                document.getElementById('result').textContent = 
+                    'Conflict detected! Invalid feedback provided';
+                return;
+            }
+            
+            document.getElementById('cows').value = '';
+            document.getElementById('bulls').value = '';
+            makeAIGuess();
+        }
+    </script>
+</body>
+</html>
